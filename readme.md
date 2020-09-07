@@ -6,7 +6,7 @@ A simple html page that allows you to extract any v1 UMOD straight in your brows
 
 Simply open the html file and follow the instructions on screen.
 
-Or you can go on [this webpage]() to test it.
+Or you can go on [this webpage](https://aziascreations.github.io/Browser-UMOD-Extractor/index.html) to test it.
 
 ## Integration
 

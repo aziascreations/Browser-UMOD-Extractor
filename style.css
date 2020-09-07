@@ -11,7 +11,7 @@ body {
 	width: calc(100% - 20px);
 	height: calc(100% - 20px);
 	
-	background-color: #cfd8dc;
+	background-color: #eceff1;
 }
 
 p, h1, h2, h3, h4, h5, h6, span {
@@ -32,7 +32,7 @@ p {
 hr {
 	margin-top: 20px;
 	margin-bottom: 20px;
-	border: 4px solid #b0bec5;
+	border: 4px solid #cfd8dc;
 }
 
 #umod-file, #umod-header, #umod-log, #umod-content {
