@@ -9,7 +9,8 @@
 		<div id="umod-header">
 			<h1 id="umod-title">Browser UMOD Extractor</h1>
 			<p id="umod-desc">This page allows you to extract any v1 UMOD straight in your browser without having to download anything or send any file over the internet.</p>
-			<p id="umod-desc-warning">Be very careful with the manifest files, you can mess up game up pretty bad if you replace the files !</p>
+			<p id="umod-desc-warning">Be very careful with the manifest files, you can mess up game up pretty bad if you replace the ones in you System folder !</p>
+			<p id="umod-desc-warning"><b><br>Some big UMODs may not be decompressed properly due to a variable-length field.<br>A fix is being worked on and the decompressor should detect this problem and warn you.</b></p>
 		</div>
 		
 		<hr>
@@ -32,116 +33,122 @@
 			&nbsp;&nbsp;&nbsp;&nbsp;
 			<button id="downBtn2" onclick="downloadFiles(false);" disabled>Download without Manifest</button>
 			<div id="umod-content">
-				<p>You need to select and process a file first.</p>
+				<p><span class="umod-log-title">You need to select and process a file first.</span></p>
 			</div>
 		</div>
 		
 		<script src="./FileSaver.js"></script>
 		<script src="./jszip.js"></script>
 		<script>
-			// Source: 
+			// Contains the filename of the selected file without the extension.
 			var inputFilename = null;
+			
+			// Contains objects that have the filename and the ArrayBuffer of the corresponding file.
 			var extractedFiles = [];
 			
 			function analyseFile() {
-				var inputElement, file, fr, tmpNode, fileDirectory;
+				var fr;
 				
+				// Preparing the variables...
+				extractedFiles = [];
 				inputFilename = document.getElementById('fileInput').value;
 				inputFilename = inputFilename.replace(/^.*[\\\/]/, "").replace(/\.[^/.]+$/, "");
-				
-				extractedFiles = [];
 				document.getElementById("downBtn1").disabled = true;
 				document.getElementById("downBtn2").disabled = true;
-				// Disable the download button
 				
-				// Clearing out the content section...
+				// Clearing out the content section and printing the filename...
 				for(var i = document.getElementById("umod-content").children.length; i>0; i--) {
 					document.getElementById("umod-content").children[i-1].remove();
 				}
+				logMessage("Filename: ", ""+document.getElementById('fileInput').value.replace(/^.*[\\\/]/, ""));
 				
-				logMessage("Filename: "+document.getElementById('fileInput').value);
-				
+				// Checking if the file API is available and loading the file...
 				if (typeof window.FileReader !== 'function') {
-					logMessage("ERROR: The file API isn't supported on this browser yet !");
+					logMessage("ERROR: ", "The file API isn't supported on this browser yet !");
 					return;
 				}
-				
-				inputElement = document.getElementById('fileInput');
-				if (!inputElement) {
-					logMessage("ERROR: Unable to find the file selection input on the page !");
-				} else if (!inputElement.files) {
-					logMessage("ERROR: This browser doesn't seem to support the `files` property of file inputs !");
-				} else if (!inputElement.files[0]) {
-					logMessage("ERROR: Please select a file before clicking 'Process' !");
+				if (!document.getElementById('fileInput')) {
+					logMessage("ERROR: ", "Unable to find the file selection input on the page !");
+				} else if (!document.getElementById('fileInput').files) {
+					logMessage("ERROR: ", "This browser doesn't seem to support the `files` property of file inputs !");
+				} else if (!document.getElementById('fileInput').files[0]) {
+					logMessage("ERROR: ", "Please select a file before clicking 'Process' !");
 				} else {
-					file = inputElement.files[0];
 					fr = new FileReader();
-					fr.onloadend = fileLoaded;
-					fr.onerror = fileError;
-					fr.readAsArrayBuffer(file);
+					fr.onloadend = onFileLoaded;
+					fr.onerror = onFileError;
+					fr.readAsArrayBuffer(document.getElementById('fileInput').files[0]);
 				}
 				
-				function fileLoaded() {
-					var magicNumber, umodSize, umodSizeValue, umodVersion, umodVersionValue;
-					var fileDirOffset, fileDirOffsetValue, fileDirectory = [], fileCount;
+				// Called when the file is loaded into the ArrayBuffer "fr.result"
+				function onFileLoaded() {
+					var dvHeader, fileDirOffset, umodSize, umodVersion;
+					
+					var fileDirectory = [], fileCount;
 					var temporaryOffset;
 					
+					// 2 last sanity checks.
 					if(fr.readyState != 2) {
-						logMessage("ERROR: The file doesn't appear to have loaded properly !<br>> Invalid ready state: "+fr.readyState);
+						logMessage("ERROR: ", "The file doesn't appear to have loaded properly !<br>"+
+								   "> Invalid ready state: "+fr.readyState);
 						return;
 					}
 					
-					logMessage("File size: "+fr.result.byteLength+" byte(s)");
+					logMessage("File size: ", fr.result.byteLength+" byte(s)");
+					if(fr.result.byteLength <= 20) {
+						logMessage("ERROR: ", "The selected file is too small to be a UMOD !");
+						return;
+					}
+					
+					// Processing the header...
+					dvHeader = new DataView(fr.result, fr.result.byteLength - 20, 20);
 					
 					// Checking the magic number...
-					magicNumber = new DataView(fr.result, fr.result.byteLength - 20, 4);
-					if(magicNumber.getUint32(0, true) === 0x9FE3C5A3) {
-						logMessage("Magic number: 0x9FE3C5A3 found !");
+					if(dvHeader.getUint32(0, true) === 0x9FE3C5A3) {
+						logMessage("Magic number: ", "0x9FE3C5A3 found !");
 					} else {
-						logMessage("ERROR: magic number not found !");
+						logMessage("ERROR: ", "Correct magic number not found !<br>> Got: "+
+								   dvHeader.getUint32(0, true).toString(16));
 						return;
 					}
 					
 					// Checking the file directory offset value...
-					fileDirOffset = new DataView(fr.result, fr.result.byteLength - 16, 4);
-					fileDirOffsetValue = fileDirOffset.getUint32(0, true);
-					logMessage("Directory offset: 0x"+fileDirOffsetValue.toString(16) + " ("+fileDirOffsetValue+")");
-					if(fileDirOffsetValue >= fr.result.byteLength) {
-						logMessage("ERROR: The file directory offset value is going out of the file buffer !");
+					fileDirOffset = dvHeader.getUint32(4, true);
+					logMessage("Directory offset: ", "0x"+fileDirOffset.toString(16) + " ("+fileDirOffset+")");
+					if(fileDirOffset >= fr.result.byteLength) {
+						logMessage("ERROR: ", "The file directory offset value is going out of the file buffer !");
 						return;
 					}
 					
 					// Checking the umod size...
-					umodSize = new DataView(fr.result, fr.result.byteLength - 12, 4);
-					umodSizeValue = umodSize.getUint32(0, true);
-					logMessage("UMOD Size: "+umodSizeValue+" byte(s)");
-					if(umodSizeValue !== fr.result.byteLength) {
-						logMessage("ERROR: The file size and umod size field values don't match !");
+					umodSize = dvHeader.getUint32(8, true);
+					logMessage("UMOD Size: ", ""+umodSize+" byte(s)");
+					if(umodSize !== fr.result.byteLength) {
+						logMessage("ERROR: ", "The file size and umod size field values don't match !");
 						return;
 					}
 					
 					// Checking the umod version...
-					umodVersion = new DataView(fr.result, fr.result.byteLength - 8, 4);
-					umodVersionValue = umodVersion.getUint32(0, true);
-					switch(umodVersionValue) {
+					umodVersion = dvHeader.getUint32(12, true);
+					switch(umodVersion) {
 						case 1:
-							logMessage("UMOD version: "+umodVersionValue+"<br>> Unreal / Unreal Tournament");
+							logMessage("UMOD version: ", ""+umodVersion+"<br>> Unreal / Unreal Tournament");
 							break;
 						default:
-							logMessage("UMOD version: "+umodVersionValue+"<br>> Unknown");
+							logMessage("UMOD version: ", ""+umodVersion+"<br>> Unknown");
 							break;
 					}
-					if(umodVersion.getUint32(0, true) !== 1) {
-						logMessage("ERROR: This version of the UMOD format is not supported !");
+					if(umodVersion !== 1) {
+						logMessage("ERROR: ", "This version of the UMOD format is not supported !");
 					}
 					
-					// The CRC is ignored. (See the source link for more info)
+					// The CRC is ignored. (See the source link on the repo for more info)
 					
 					// Parsing the file directory...
-					fileCount = new DataView(fr.result, fileDirOffsetValue, 1).getUint8(0);
-					logMessage("File count: "+fileCount);
+					fileCount = new DataView(fr.result, fileDirOffset, 1).getUint8(0);
+					logMessage("File count: ", fileCount);
 					
-					temporaryOffset = fileDirOffsetValue + 1;
+					temporaryOffset = fileDirOffset + 1;
 					for(var i=0; i<fileCount; i++) {
 						// Preparing the object in fileDirectory...
 						fileDirectory[i] = {};
@@ -165,26 +172,46 @@
 						temporaryOffset += 4*3;
 						
 						logMessage(
-							"> "+fileDirectory[i].fileName+"<br>"+
+							"> "+fileDirectory[i].fileName+"<br>",
 							"&#9;Offset: 0x"+fileDirectory[i].offset.toString(16)+" ("+fileDirectory[i].offset+")<br>"+
 							"&#9;Lenght: "+fileDirectory[i].byteLength+" byte(s)"+"<br>"+
 							"&#9;Flags: 0x"+fileDirectory[i].flags.toString(16)
 						);
-					}
-					
-					// Verifying the value that were read.
-					for(var i=0; i<fileDirectory.length; i++) {
-						// Checking if it does not overlap with the file directory/header and is within bounds.
 						
-						// Checking if it does not overlap with another file.
-						for(var i=0; i<fileDirectory.length; i++) {
-							// TODO: this...
+						// Fix for the misreading of "JailbreakIII-Gold.umod".
+						if(fileDirectory[i].flags !== 0 && fileDirectory[i].flags !== 3) {
+							logMessage("ERROR: ", "Illegal flag value, probably due to corruption or reading mistake !");
+							return;
 						}
 					}
 					
-					logMessage("The file directory appears to be valid !");
+					// Verifying the values that were just read...
+					if(temporaryOffset+20 !== fr.result.byteLength) {
+						logMessage("ERROR: ", "The file directory doesn't appear to have been read completely !<br>"+
+								   "> Stopped at: 0x"+temporaryOffset.toString(16)+"<br>"+
+								   "> Expected: 0x"+(fr.result.byteLength-20).toString(16)+"<br>"+
+								   "> Difference: "+((fr.result.byteLength-20) - temporaryOffset)+" byte(s)");
+						return;
+					}
+					for(var i=0; i<fileDirectory.length; i++) {
+						// Checking if it does not overlap with the file directory/header and is within bounds.
+						if(fileDirectory[i].offset >= fileDirOffset) {
+							logMessage("ERROR: ", "The offset if "+fileDirectory[i].fileName+" is invalid !");
+							return;
+						}
+						if((fileDirectory[i].offset + fileDirectory[i].byteLength) >= fileDirOffset) {
+							logMessage("ERROR: ", "The file "+fileDirectory[i].fileName+" is too big and goes past the directory !");
+							return;
+						}
+						
+						// Checking if it does not overlap with another file.
+						for(var i=0; i<fileDirectory.length; i++) {
+							// TODO: Do it (not urgent...)
+						}
+					}
+					logMessage("INFO: ", "The file directory appears to be valid !");
 					
-					// Extracting the files...
+					// Copying the relevant data into the extractedFiles array...
 					for(var i=0; i<fileDirectory.length; i++) {
 						extractedFiles[i] = {};
 						extractedFiles[i].fileName = fileDirectory[i].fileName;
@@ -192,14 +219,14 @@
 							fileDirectory[i].offset, fileDirectory[i].offset + fileDirectory[i].byteLength
 						);
 					}
+					logMessage("INFO: ", "The uncompressed files are ready to be downloaded !");
 					
-					logMessage("The uncompressed files are ready to be downloaded !");
 					document.getElementById("downBtn1").disabled = false;
 					document.getElementById("downBtn2").disabled = false;
 				}
 				
-				function fileError() {
-					alert("An error occured while loading the file !");
+				function onFileError() {
+					logMessage("ERROR: ", "An error occured while loading the file !");
 					inputFilename = null;
 					extractedFiles = [];
 					document.getElementById("downBtn").disabled = true;
@@ -207,16 +234,19 @@
 			}
 			
 			function downloadFiles(includeManifest = true) {
-				var zip;
-				
 				// Just a check to avoid breaking shit.
 				if(inputFilename === null || extractedFiles.length === 0) {
-					alert("Unable to generate zip, no data is available !");
+					logMessage("ERROR: ", "Unable to generate zip, no data is available !");
 					return;
 				}
 				
-				zip = new JSZip();
+				document.getElementById("downBtn1").disabled = true;
+				document.getElementById("downBtn2").disabled = true;
+				document.getElementById("fileInput").disabled = true;
 				
+				var zip = new JSZip();
+				
+				// Adding the files to the zip file...
 				for(var i=0; i<extractedFiles.length; i++) {
 					if(includeManifest || extractedFiles[i].fileName.match(/System\\Manifest\.in(i|t)/gi) === null) {
 						zip.file(
@@ -229,24 +259,25 @@
 					}
 				}
 				
-				logMessage("Generating the zip file, please wait...");
+				// Generating and downloading the zip file...
+				logMessage("INFO: ", "Generating the zip file, please wait...");
 				zip.generateAsync({type:"blob"}).then(function(blob) {
 					saveAs(blob, inputFilename + "_UMOD"+(
 						!includeManifest ? "_NoManifest" : ""
 					)+".zip");
 				}, function (err) {
-					logMessage("ERROR: "+err);
+					logMessage("ERROR: ", err);
 				});
+				
+				document.getElementById("downBtn1").disabled = false;
+				document.getElementById("downBtn2").disabled = false;
+				document.getElementById("fileInput").disabled = false;
 			}
 			
-			function logMessage(message, useConsole = false) {
+			function logMessage(title, message) {
 				var newNode = document.createElement("p");
-				newNode.innerHTML = message;
+				newNode.innerHTML = "<span class=\"umod-log-title\">"+title+"</span>"+message;
 				document.getElementById("umod-content").appendChild(newNode);
-				
-				if(useConsole) {
-				   console.info(message);
-				}
 			}
 		</script>
 	</body>

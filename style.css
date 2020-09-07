@@ -30,9 +30,8 @@ p {
 }
 
 hr {
-	margin-top: 20px;
-	margin-bottom: 20px;
-	border: 4px solid #cfd8dc;
+	margin: 15px;
+	border: 0;
 }
 
 #umod-file, #umod-header, #umod-log, #umod-content {
@@ -41,4 +40,8 @@ hr {
 
 #umod-content {
 	margin-top: 15px;
+}
+
+span.umod-log-title {
+	font-weight: bold;
 }
