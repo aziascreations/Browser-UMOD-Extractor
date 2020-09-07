@@ -1,0 +1,6 @@
+[submodule "js/jszip"]
+	path = js/jszip
+	url = https://github.com/Stuk/jszip.git
+[submodule "js/FileSaver"]
+	path = js/FileSaver
+	url = https://github.com/eligrey/FileSaver.js.git

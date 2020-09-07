@@ -2,17 +2,21 @@
 <html lang="en">
 	<head>
 		<meta charset="UTF-8">
-		<title>Unreal Browser UMOD Extractor</title>
-		<meta property="og:title" content="Unreal Browser UMOD Extractor" />
+		<title>Unreal Online UMOD Extractor</title>
+		<meta name="description" content="An online tool that allows you to extract any v1 UMOD straight in your browser without having to download anything or send any file over the internet.">
+		<meta property="og:title" content="Unreal Online UMOD Extractor" />
 		<meta property="og:description " content="An online tool that allows you to extract any v1 UMOD straight in your browser without having to download anything or send any file over the internet." />
 		<meta property="og:type" content="website" />
 		<meta property="og:url" content="https://aziascreations.github.io/Browser-UMOD-Extractor/" />
 		<meta property="og:image" content="https://icons.iconarchive.com/icons/custom-icon-design/flatastic-7/512/Extract-object-icon.png" />
-		<link rel="stylesheet" href="./style.css">
+		<meta name="robots" content="index, nofollow">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<link rel="icon" type="image/png" href="https://icons.iconarchive.com/icons/custom-icon-design/flatastic-7/16/Extract-object-icon.png">
+		<link rel="stylesheet" href="./css/style.css">
 	</head>
 	<body>
 		<div id="umod-header">
-			<h1 id="umod-title">Browser UMOD Extractor</h1>
+			<h1 id="umod-title">Unreal Online UMOD Extractor</h1>
 			<p id="umod-desc">This page allows you to extract any v1 UMOD straight in your browser without having to download anything or send any file over the internet.</p>
 			<p id="umod-desc-warning">Be very careful with the manifest files, you can mess up game up pretty bad if you replace the ones in you System folder !</p>
 			<p id="umod-desc-warning"><b><br>Some big UMODs may not be decompressed properly due to a variable-length field.<br>A fix is being worked on and the decompressor should detect this problem and warn you.</b></p>
@@ -42,8 +46,8 @@
 			</div>
 		</div>
 		
-		<script src="./FileSaver.js"></script>
-		<script src="./jszip.js"></script>
+		<script src="./js/FileSaver/dist/FileSaver.min.js"></script>
+		<script src="./js/jszip/dist/jszip.min.js"></script>
 		<script>
 			// Contains the filename of the selected file without the extension.
 			var inputFilename = null;
