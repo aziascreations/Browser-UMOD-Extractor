@@ -2,7 +2,12 @@
 <html lang="en">
 	<head>
 		<meta charset="UTF-8">
-		<title>Browser UMOD Extractor</title>
+		<title>Unreal Browser UMOD Extractor</title>
+		<meta property="og:title" content="Unreal Browser UMOD Extractor" />
+		<meta property="og:og:description " content="An online tool that allows you to extract any v1 UMOD straight in your browser without having to download anything or send any file over the internet." />
+		<meta property="og:type" content="website" />
+		<meta property="og:url" content="https://aziascreations.github.io/Browser-UMOD-Extractor/" />
+		<meta property="og:image" content="https://icons.iconarchive.com/icons/custom-icon-design/flatastic-7/512/Extract-object-icon.png" />
 		<link rel="stylesheet" href="./style.css">
 	</head>
 	<body>
@@ -107,7 +112,7 @@
 					if(dvHeader.getUint32(0, true) === 0x9FE3C5A3) {
 						logMessage("Magic number: ", "0x9FE3C5A3 found !");
 					} else {
-						logMessage("ERROR: ", "Correct magic number not found !<br>> Got: "+
+						logMessage("ERROR: ", "Correct magic number not found !<br>Got: 0x"+
 								   dvHeader.getUint32(0, true).toString(16));
 						return;
 					}
