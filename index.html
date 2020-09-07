@@ -231,7 +231,7 @@
 				
 				logMessage("Generating the zip file, please wait...");
 				zip.generateAsync({type:"blob"}).then(function(blob) {
-					saveAs(blob, inputFilename.split('.').slice(0, -1).join('.') + "_UMOD"+(
+					saveAs(blob, inputFilename + "_UMOD"+(
 						!includeManifest ? "_NoManifest" : ""
 					)+".zip");
 				}, function (err) {
